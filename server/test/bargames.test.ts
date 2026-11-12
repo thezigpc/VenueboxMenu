@@ -8,6 +8,8 @@ import type { AdminState, Playlist } from "@menu/shared";
 import { startApp, type TestApp } from "./helpers.js";
 
 const TOKEN = "test-token";
+/** What the box's gateway adds for a browser signed in to the box admin. */
+const STAFF = { "x-bargames-via": "1", "x-bargames-staff": "1" };
 
 describe("standalone", () => {
   let t: TestApp;
@@ -26,6 +28,11 @@ describe("standalone", () => {
     assert.deepEqual(await (await t.get("/api/config")).json(), { gameName: "The Root Bar" });
     const s = (await (await t.get("/api/admin/state", token)).json()) as AdminState;
     assert.equal(s.venue, null);
+  });
+
+  test("standalone has no box sign-in", async () => {
+    const s = (await (await t.get("/api/admin/status")).json()) as { venueLogin: boolean };
+    assert.equal(s.venueLogin, false);
   });
 
   test("there's no box password standalone", async () => {
@@ -117,6 +124,16 @@ describe("on a box", () => {
     assert.ok(t.net.calls.some((u) => u.includes("latitude=47.6062") && u.includes("timezone=America%2FLos_Angeles")));
   });
 
+  test("on a box the sign-in form comes first and guests can't claim the menu", async () => {
+    type S = { setupNeeded: boolean; venueLogin: boolean; setupAllowed: boolean };
+    const guest = (await (await t.get("/api/admin/status")).json()) as S;
+    assert.deepEqual([guest.setupNeeded, guest.venueLogin, guest.setupAllowed], [true, true, false]);
+    // A guest on the venue Wi-Fi can't set the menu's password first.
+    assert.equal((await t.send("POST", "/api/admin/setup", { password: "guest-grabs-it" })).status, 403);
+    const staff = (await (await fetch(t.url + "/api/admin/status", { headers: STAFF })).json()) as S;
+    assert.equal(staff.setupAllowed, true);
+  });
+
   test("the box's admin password opens the admin before the menu has its own", async () => {
     const status = (await (await t.get("/api/admin/status")).json()) as { setupNeeded: boolean };
     assert.equal(status.setupNeeded, true);
@@ -139,7 +156,14 @@ describe("on a box", () => {
   });
 
   test("the admin's own choices override the venue's", async () => {
-    const token = await t.login();
+    // Staff (vouched for by the box) may still set a separate menu password.
+    const setup = await fetch(t.url + "/api/admin/setup", {
+      method: "POST",
+      headers: { ...STAFF, "content-type": "application/json" },
+      body: JSON.stringify({ password: "correct horse battery" }),
+    });
+    assert.equal(setup.status, 200);
+    const token = ((await setup.json()) as { token: string }).token;
     // With the menu's own password set, both it and the box's still work.
     assert.equal((await t.send("POST", "/api/admin/login", { password: "correct horse battery" })).status, 200);
     assert.equal((await t.send("POST", "/api/admin/login", { password: "box-password" })).status, 200);

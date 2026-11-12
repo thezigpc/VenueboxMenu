@@ -2,8 +2,8 @@
   "id": "menu",
   "name": "Menu",
   "kind": "app",
-  "version": "0.3.1",
-  "image": "ghcr.io/thezigpc/menu:0.3.1",
+  "version": "0.3.2",
+  "image": "ghcr.io/thezigpc/menu:0.3.2",
   "port": 3005,
   "sdk": { "version": "0.8.0", "level": 1 },
   "routes": {

@@ -58,6 +58,10 @@ export interface AuthStatus {
   broken: boolean;
   authenticated: boolean;
   minPasswordLength: number;
+  /** On a box (kit 0.5.1): the box's admin password signs in; show the sign-in form first. */
+  venueLogin?: boolean;
+  /** Whether a (separate) menu password may be set now. False on a box unless staff. */
+  setupAllowed?: boolean;
 }
 
 export const api = {

@@ -58,6 +58,9 @@ export async function createApp(o: AppOptions): Promise<MenuApp> {
     // On a box the venue box's admin password also opens this admin, even before the menu
     // has a password of its own (SDK 0.8.0). The box limits guesses; off a box it's false.
     venuePassword: (pw, ip) => bg.checkVenuePassword(pw, ip),
+    // Kit 0.5.1: on a box the box's password takes over: status says venueLogin, and
+    // setup (claiming a separate menu password) is refused unless the box vouches for staff.
+    onBox: bg.connected,
   });
   await auth.init();
 
