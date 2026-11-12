@@ -2,8 +2,8 @@
 // weather, and watch a live preview of the TV.
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { staffSignIn, VenueAnnouncement } from "@bargames/gamekit/client";
-import { basePath, bgUrl } from "@bargames/sdk/client";
+import { BoxAdminLink, staffSignIn, VenueAnnouncement } from "@bargames/gamekit/client";
+import { basePath, bgUrl, isOnBox } from "@bargames/sdk/client";
 import type { AdminState } from "@menu/shared";
 import { api, ApiError, getToken, setToken, type AuthStatus } from "../api";
 import { useVenue } from "../useVenue";
@@ -176,6 +176,12 @@ export function AdminPage() {
   return (
     <div className="ad-page">
       <VenueAnnouncement ctx={venue} />
+      {/* SDK 0.11.0: back to the venue box's admin (staff often arrive from there). Nothing standalone. */}
+      {isOnBox(venue) && (
+        <div className="ad-box-admin">
+          <BoxAdminLink ctx={venue} />
+        </div>
+      )}
       {phase.kind === "loading" && <p className="muted ad-center">Loading…</p>}
       {phase.kind === "offline" && (
         <div className="ad-auth card">

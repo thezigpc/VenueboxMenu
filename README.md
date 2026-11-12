@@ -32,7 +32,8 @@ game: no rooms or players).
   Skips images that won't load and reloads itself when the server is updated.
   "Menu coming soon" when nothing is on.
 - **On a box:** the venue's name, theme, location, time zone and units. The TV calls
-  `tableMode` and shows a QR code to the venue's games list and the staff announcement.
+  `tableMode` and shows a QR code to the venue's games list and the staff announcement
+  (top or bottom, skipped when it's for phones only). The admin links back to the box admin.
   The phone page shows the announcement and "← All games". Standalone, none of that
   appears.
 

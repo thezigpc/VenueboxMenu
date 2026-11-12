@@ -1,6 +1,6 @@
 # Bar Games integration: Menu (app)
 
-**Level 1, `kind: "app"`, SDK 0.10.2, game kit 0.6.1.** An app (formerly "display module") has no rooms, players, events or
+**Level 1, `kind: "app"`, SDK 0.11.0, game kit 0.7.0.** An app (formerly "display module") has no rooms, players, events or
 commands. What it takes from the box is the venue's name, theme, location, time zone,
 units, games-list address and announcement.
 
@@ -13,7 +13,7 @@ expected "not pinned by digest" warning).
 
 ## `npx bargames check` (SDK 0.10.0 mock box with `--base /menu`, server on a spare port)
 ```
-menu@0.5.1 · level 1 · http://127.0.0.1:3116
+menu@0.6.0 · level 1 · http://127.0.0.1:3116
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -54,6 +54,21 @@ Checked by hand through the mock gateway (`--announce`). The mock lists the menu
   - staff sign-in through `/__bargames/staff?next=/menu/admin` works;
   - no 4xx responses and no page errors;
   - the same pages at the root, standalone, are unchanged.
+
+## Announcements and the box admin link (SDK 0.11.0)
+- The TV draws the staff announcement itself (`activeAnnouncement`). It skips one with
+  `show: "phones"` and puts it at the top or the bottom per `position`. With a bottom strip
+  the bottom corners (QR code, clock) move up above it; with a top one the top corners move
+  down.
+- Phone and admin use the kit's `VenueAnnouncement`, which follows `show` and `position`
+  itself. The page gets bottom padding when it's fixed at the bottom, so it doesn't cover
+  "← All games".
+- The venue comes from the kit's `useVenue` (`watchVenue`), so on box 0.12.0 announcements
+  come and go within seconds.
+- The admin has the kit's `<BoxAdminLink>` ("← Box admin") at the top, on a box only.
+- Checked on `mock-box --base /menu`, with `show`, `position` and `adminUrl` patched into
+  `venue.json`, since the mock can't set them. Every combination of
+  everywhere/tvs/phones × top/bottom behaves as above. Standalone shows no link and no strip.
 
 ## Server (`server/src/bargames.ts`, `server/src/app.ts`)
 - `createBarGames({ gameId: "menu" })`. The middleware is mounted before `/api`, the
@@ -128,7 +143,7 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:<version>` (0.5.1 is on SDK 0.10.2, kit 0.6.1), published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.6.0 is on SDK 0.11.0, kit 0.7.0), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
 - Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
   anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the

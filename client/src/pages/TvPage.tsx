@@ -263,7 +263,11 @@ export function TvPage() {
   const layers = useSlideshow(playlist, clockOffset);
   const now = useNow(5000);
   const onBox = isOnBox(venue);
-  const announcement = onBox ? activeAnnouncement(venue, now) : undefined;
+  // The staff's announcement, drawn as a TV-sized strip. SDK 0.11.0: "show" can keep it to
+  // phones (then not here), and "position" puts it at the top (default) or the bottom.
+  const active = onBox ? activeAnnouncement(venue, now) : undefined;
+  const announcement = active && active.show !== "phones" ? active : undefined;
+  const announceAt = announcement?.position === "bottom" ? "bottom" : "top";
   const playUrl = onBox ? venue.venue.playUrl : undefined;
   const name = playlist?.name ?? (onBox ? venue.game.displayName : "Menu");
 
@@ -281,13 +285,13 @@ export function TvPage() {
   const sharesQrCorner = overlay?.position === "bottom-right";
 
   return (
-    <div className={`tv-page${announcement ? " has-announce" : ""}`}>
+    <div className={`tv-page${announcement ? ` has-announce-${announceAt}` : ""}`}>
       {layers.map((l) => (
         <LayerView key={l.key} layer={l} name={name} venue={venue} />
       ))}
       {!playlist && <div className="tv-layer tv-blank" />}
       {announcement && (
-        <div className="tv-announce" role="status">
+        <div className={`tv-announce tv-announce-${announceAt}`} role="status">
           {announcement.text}
         </div>
       )}
