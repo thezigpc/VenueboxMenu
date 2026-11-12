@@ -1,7 +1,7 @@
 # Menu
 
 A slideshow for bar TVs: menu slides plus a weather slide on an interval, with a phone
-view of the same menu. Runs standalone or on a Bar Games box (a display module, not a
+view of the same menu. Runs standalone or on a Bar Games box (an app, not a
 game: no rooms or players).
 
 | Page | Path | What it is |

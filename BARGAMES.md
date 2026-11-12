@@ -1,18 +1,18 @@
-# Bar Games integration: Menu (display module)
+# Bar Games integration: Menu (app)
 
-**Level 1, `kind: "display"`, SDK 0.5.0.** A display module has no rooms, players, events or
+**Level 1, `kind: "app"`, SDK 0.6.0.** An app (formerly "display module") has no rooms, players, events or
 commands. What it takes from the box is the venue's name, theme, location, time zone,
 units, games-list address and announcement.
 
 ## Manifest
-`bargames.json`: id `menu`, `kind: "display"`, port 3005, routes `/` (phone), `/tv`
+`bargames.json`: id `menu`, `kind: "app"`, port 3005, routes `/` (phone), `/tv`
 (TV), `/admin` (host), `network.internet: true` (Open-Meteo), `env.DATA_DIR=/data`,
 256m. `events` and `commands` are empty. `npx bargames validate .` passes (with the
 expected "not pinned by digest" warning).
 
-## `npx bargames check` (mock box, server on a spare port)
+## `npx bargames check` (SDK 0.6.0 mock box, server on a spare port)
 ```
-menu@0.1.0 · level 1 · http://127.0.0.1:3106
+menu@0.2.0 · level 1 · http://127.0.0.1:3106
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -25,7 +25,7 @@ On Windows with Node 24, the CLI then prints `Assertion failed: !(handle->flags 
 UV_HANDLE_CLOSING) … async.c` as it exits. That is a libuv quirk on process exit, after
 the result.
 
-Checked by hand through the mock gateway (`:7080`, `--announce "Last call at 1:30"`):
+Checked by hand through the mock gateway (`--announce`). The mock lists the menu in `venue.apps`:
 - TV: mock theme; `<html data-bargames-screen="shared">`; the announcement strip; the QR
   code to `venue.playUrl`; pointer hidden.
 - Phone: mock theme; the kit's `VenueAnnouncement` at the top; `BackToGames` with "Also
@@ -76,8 +76,6 @@ Checked by hand through the mock gateway (`:7080`, `--announce "Last call at 1:3
   - An 18 MB, 24-megapixel JPEG upload was shrunk to 1620×1080. Memory afterwards was
     88 MiB; no OOM.
   - Writing to `/app` fails (read-only); the process runs as uid 1000.
-- Not yet done: the clean-clone build (`git clone` then `docker build`). The repo has no
-  commits yet.
 
 ## Standalone
 Everything box-only is behind `bg.connected` (server) or `isOnBox(ctx)` (client). Tests
@@ -91,13 +89,14 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:0.1.0`, published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.2.0 is on SDK 0.6.0), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
-- Not pushed yet: there is no GitHub repo. The first run has to be started by hand, and
-  the package then made Public (guide step 10).
+- Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
+  anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the
+  clean-checkout build.
 
 ## SDK requests
 - None blocking.
 - Nice to have: a `tableMode` option to leave out the "Reconnecting…" strip, or
-  guidance for display modules on it. The menu doesn't call `setState`, so a TV keeps
+  guidance for apps on it. The menu doesn't call `setState`, so a TV keeps
   showing the last playlist during an outage.

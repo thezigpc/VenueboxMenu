@@ -3,7 +3,7 @@
 // Off a box (no BG_CORE_URL / BG_GAME_TOKEN env) every call here is a no-op and the
 // module runs exactly as it does standalone: that's guaranteed by the SDK.
 //
-// A display module has no rooms, players, events or commands: level 1 is the venue's
+// An app (a screen for the venue, not a game) has no rooms, players, events or commands: level 1 is the venue's
 // name, colors, location, time zone and units, plus an empty status for the box.
 
 import { createBarGames, type BarGames } from "@bargames/sdk/server";
@@ -12,12 +12,12 @@ import { log } from "@bargames/gamekit/server";
 
 export function makeBarGames(opts: { coreUrl?: string; token?: string; defaultName: string }): BarGames {
   const bg = createBarGames({ gameId: "menu", defaultName: opts.defaultName, coreUrl: opts.coreUrl, token: opts.token });
-  // The box asks every package for status; a display module has no rooms to list.
+  // The box asks every package for status; an app has no rooms to list.
   bg.setStatusProvider(() => ({ rooms: [] }));
   return bg;
 }
 
-/** What the box knows about the venue that the menu uses (all optional, SDK 0.5.0). */
+/** What the box knows about the venue that the menu uses (all optional, SDK 0.5.0+). */
 export interface VenueFacts {
   name: string;
   location: Location | null;
