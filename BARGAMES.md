@@ -1,6 +1,6 @@
 # Bar Games integration: Menu (app)
 
-**Level 1, `kind: "app"`, SDK 0.10.0, game kit 0.6.0.** An app (formerly "display module") has no rooms, players, events or
+**Level 1, `kind: "app"`, SDK 0.10.2, game kit 0.6.1.** An app (formerly "display module") has no rooms, players, events or
 commands. What it takes from the box is the venue's name, theme, location, time zone,
 units, games-list address and announcement.
 
@@ -13,7 +13,7 @@ expected "not pinned by digest" warning).
 
 ## `npx bargames check` (SDK 0.10.0 mock box with `--base /menu`, server on a spare port)
 ```
-menu@0.5.0 · level 1 · http://127.0.0.1:3116
+menu@0.5.1 · level 1 · http://127.0.0.1:3116
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -38,7 +38,8 @@ Checked by hand through the mock gateway (`--announce`). The mock lists the menu
   `BG_BASE_PATH` (box) or `BASE_PATH` (self-hosted); unset, the menu runs at the root as before.
 - `index.html` is served by the kit's `serveSpa(app, { dist, basePath: bg.basePath })`,
   which injects `<meta name="bargames-base">` and `<base href="/menu/">`. Vite builds with
-  `base: "./"`.
+  `base: "./"`. At the root, kit 0.6.1 adds only `<base href="/">`, so a deep link such as
+  `/tv/` still loads its assets.
 - The client adds the prefix with the SDK's `bgUrl()`: every API call (`client/src/api.ts`,
   `usePlaylist.ts`), slide images (the playlist still hands out `/slides/<file>`), the
   admin's links to the TV and phone pages and its TV preview iframe. `main.tsx` strips
@@ -127,7 +128,7 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:<version>` (0.5.0 is on SDK 0.10.0, kit 0.6.0), published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.5.1 is on SDK 0.10.2, kit 0.6.1), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
 - Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
   anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the

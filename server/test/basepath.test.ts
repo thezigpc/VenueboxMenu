@@ -51,9 +51,12 @@ describe("at the root (no prefix)", () => {
   });
   after(() => t.stop());
 
-  test("index.html goes out untouched", async () => {
-    const r = await html(t, "/tv");
-    assert.equal(r.status, 200);
-    assert.doesNotMatch(r.body, /bargames-base|<base /);
+  test("index.html gets only <base href=\"/\">, so deep links like /tv/ load their assets", async () => {
+    for (const p of ["/", "/tv", "/tv/", "/admin/"]) {
+      const r = await html(t, p);
+      assert.equal(r.status, 200, p);
+      assert.doesNotMatch(r.body, /bargames-base/, p);
+      assert.match(r.body, /<base href="\/">/, p);
+    }
   });
 });
