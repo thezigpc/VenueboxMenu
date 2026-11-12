@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { staffSignIn, VenueAnnouncement } from "@bargames/gamekit/client";
+import { isOnBox } from "@bargames/sdk/client";
 import type { AdminState } from "@menu/shared";
 import { api, ApiError, getToken, setToken, type AuthStatus } from "../api";
 import { useVenue } from "../useVenue";
@@ -11,12 +12,15 @@ import { SettingsPanel } from "../admin/SettingsPanel";
 
 type Phase = { kind: "loading" } | { kind: "auth"; status: AuthStatus } | { kind: "ready" } | { kind: "offline"; message: string };
 
-function AuthForm({ status, onDone }: { status: AuthStatus; onDone: () => void }) {
+function AuthForm({ status, onBox, onDone }: { status: AuthStatus; onBox: boolean; onDone: () => void }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const setup = status.setupNeeded;
+  // On a box the venue box's admin password works even before the menu has its own, so
+  // staff can sign in with it instead of choosing a new one.
+  const [useBoxPassword, setUseBoxPassword] = useState(false);
+  const setup = status.setupNeeded && !useBoxPassword;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -28,7 +32,9 @@ function AuthForm({ status, onDone }: { status: AuthStatus; onDone: () => void }
       setToken(r.token);
       onDone();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "That didn't work.");
+      // Not set up yet and the box didn't accept it: that's simply a wrong password.
+      if (err instanceof ApiError && err.status === 409 && useBoxPassword) setError("That isn't the venue box's admin password.");
+      else setError(err instanceof Error ? err.message : "That didn't work.");
     } finally {
       setBusy(false);
     }
@@ -49,8 +55,10 @@ function AuthForm({ status, onDone }: { status: AuthStatus; onDone: () => void }
         <p className="muted">
           Choose the admin password. Whoever sets it first becomes the admin, so do this now. At least {status.minPasswordLength} characters.
         </p>
+      ) : useBoxPassword ? (
+        <p className="muted">Sign in with the venue box's admin password.</p>
       ) : (
-        <p className="muted">Sign in to change the menu.</p>
+        <p className="muted">{onBox ? "Sign in with this menu's password or the venue box's admin password." : "Sign in to change the menu."}</p>
       )}
       <label>
         Password
@@ -66,6 +74,18 @@ function AuthForm({ status, onDone }: { status: AuthStatus; onDone: () => void }
       <button className="primary" disabled={busy || !password}>
         {setup ? "Set password" : "Sign in"}
       </button>
+      {onBox && status.setupNeeded && (
+        <button
+          type="button"
+          className="link"
+          onClick={() => {
+            setUseBoxPassword((v) => !v);
+            setError("");
+          }}
+        >
+          {useBoxPassword ? "Choose a password for the menu instead" : "Use the venue box's admin password instead"}
+        </button>
+      )}
     </form>
   );
 }
@@ -159,7 +179,7 @@ export function AdminPage() {
           <button onClick={() => void check()}>Try again</button>
         </div>
       )}
-      {phase.kind === "auth" && <AuthForm status={phase.status} onDone={() => void check()} />}
+      {phase.kind === "auth" && <AuthForm status={phase.status} onBox={isOnBox(venue)} onDone={() => void check()} />}
       {phase.kind === "ready" && (
         <>
           <header className="ad-header">

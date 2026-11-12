@@ -1,6 +1,6 @@
 # Bar Games integration: Menu (app)
 
-**Level 1, `kind: "app"`, SDK 0.7.0, game kit 0.4.0.** An app (formerly "display module") has no rooms, players, events or
+**Level 1, `kind: "app"`, SDK 0.8.0, game kit 0.5.0.** An app (formerly "display module") has no rooms, players, events or
 commands. What it takes from the box is the venue's name, theme, location, time zone,
 units, games-list address and announcement.
 
@@ -10,9 +10,9 @@ units, games-list address and announcement.
 256m. `events` and `commands` are empty. `npx bargames validate .` passes (with the
 expected "not pinned by digest" warning).
 
-## `npx bargames check` (SDK 0.7.0 mock box, server on a spare port)
+## `npx bargames check` (SDK 0.8.0 mock box, server on a spare port)
 ```
-menu@0.3.0 · level 1 · http://127.0.0.1:3106
+menu@0.3.1 · level 1 · http://127.0.0.1:3106
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -47,6 +47,12 @@ Checked by hand through the mock gateway (`--announce`). The mock lists the menu
   (tested both ways in `server/test/bargames.test.ts`). Checked in a browser on the mock
   box: `/__bargames/staff?next=/admin` opens the admin without the password, and
   `?off=1` brings the form back.
+- The box's admin password (SDK 0.8.0): `createAdminAuth({ venuePassword: (pw, ip) =>
+  bg.checkVenuePassword(pw, ip) })`. It works on the menu's login, even before the menu
+  has a password of its own. On a box, a fresh menu's setup screen offers "Use the venue
+  box's admin password instead"; using it doesn't set a menu password. The box limits
+  guesses; standalone it's always refused. Tested with a fake core, and in a browser on
+  the mock box (`box-password`).
 - Admin login uses the kit's `adminRouter` and `clientIp` (`bg.clientIp`). Per-IP
   lockout is off standalone (behind Cloudflare, a whole venue shares one IP) and on
   with a box.
@@ -96,7 +102,7 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:<version>` (0.3.0 is on SDK 0.7.0), published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.3.1 is on SDK 0.8.0), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
 - Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
   anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the

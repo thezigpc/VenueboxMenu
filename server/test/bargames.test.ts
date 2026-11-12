@@ -28,6 +28,10 @@ describe("standalone", () => {
     assert.equal(s.venue, null);
   });
 
+  test("there's no box password standalone", async () => {
+    assert.equal((await t.send("POST", "/api/admin/login", { password: "box-password" })).status, 401);
+  });
+
   test("gateway staff headers are ignored standalone", async () => {
     const staff = { "x-bargames-via": "1", "x-bargames-staff": "1" };
     const status = (await (await fetch(t.url + "/api/admin/status", { headers: staff })).json()) as { trusted: boolean };
@@ -65,6 +69,15 @@ async function fakeCore(): Promise<{ url: string; close: () => Promise<void> }> 
       );
     }
     if (req.url === "/internal/events") return void res.writeHead(204).end();
+    if (req.url === "/internal/venue-password") {
+      let body = "";
+      req.on("data", (d) => (body += d));
+      req.on("end", () => {
+        res.writeHead(200, { "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: JSON.parse(body).password === "box-password" }));
+      });
+      return;
+    }
     res.writeHead(404).end();
   });
   await new Promise<void>((r) => srv.listen(0, "127.0.0.1", r));
@@ -104,6 +117,16 @@ describe("on a box", () => {
     assert.ok(t.net.calls.some((u) => u.includes("latitude=47.6062") && u.includes("timezone=America%2FLos_Angeles")));
   });
 
+  test("the box's admin password opens the admin before the menu has its own", async () => {
+    const status = (await (await t.get("/api/admin/status")).json()) as { setupNeeded: boolean };
+    assert.equal(status.setupNeeded, true);
+    assert.equal((await t.send("POST", "/api/admin/login", { password: "not-it" })).status, 409);
+    const r = (await (await t.send("POST", "/api/admin/login", { password: "box-password" })).json()) as { token: string };
+    assert.equal((await t.get("/api/admin/state", r.token)).status, 200);
+    // Using it doesn't set up a menu password: the setup screen is still there.
+    assert.equal(((await (await t.get("/api/admin/status")).json()) as { setupNeeded: boolean }).setupNeeded, true);
+  });
+
   test("staff signed in to the box get an admin session without the password", async () => {
     const staff = { "x-bargames-via": "1", "x-bargames-staff": "1" };
     const status = (await (await fetch(t.url + "/api/admin/status", { headers: staff })).json()) as { trusted: boolean };
@@ -117,6 +140,10 @@ describe("on a box", () => {
 
   test("the admin's own choices override the venue's", async () => {
     const token = await t.login();
+    // With the menu's own password set, both it and the box's still work.
+    assert.equal((await t.send("POST", "/api/admin/login", { password: "correct horse battery" })).status, 200);
+    assert.equal((await t.send("POST", "/api/admin/login", { password: "box-password" })).status, 200);
+    assert.equal((await t.send("POST", "/api/admin/login", { password: "wrong-password" })).status, 401);
     const before = (await (await t.get("/api/admin/state", token)).json()) as AdminState;
     assert.deepEqual(before.venue, { location: { latitude: 47.6062, longitude: -122.3321, label: "Seattle, WA" }, timezone: "America/Los_Angeles", units: "metric" });
     await t.send("PUT", "/api/admin/settings", { timezone: "America/Denver", weather: { units: "imperial", location: { latitude: 39.74, longitude: -104.99, label: "Denver" } } }, token);

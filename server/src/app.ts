@@ -55,6 +55,9 @@ export async function createApp(o: AppOptions): Promise<MenuApp> {
     // lockout would let any guest lock the staff out; the kit's global cap and delay still
     // slow guessing. On a box each device has its own address.
     failsAllowed: bg.connected ? undefined : Number.POSITIVE_INFINITY,
+    // On a box the venue box's admin password also opens this admin, even before the menu
+    // has a password of its own (SDK 0.8.0). The box limits guesses; off a box it's false.
+    venuePassword: (pw, ip) => bg.checkVenuePassword(pw, ip),
   });
   await auth.init();
 
