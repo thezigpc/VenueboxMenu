@@ -2,6 +2,7 @@
 // schedule, delete.
 
 import { useEffect, useRef, useState, type DragEvent } from "react";
+import { bgUrl } from "@bargames/sdk/client";
 import { DAY_SHORT, describeSchedule, isScheduledNow, TRANSITIONS, type AdminState, type Schedule, type Slide, type Transition, type Weekday } from "@menu/shared";
 import { api } from "../api";
 
@@ -211,8 +212,8 @@ function SlideRow({
       >
         ⋮⋮
       </div>
-      <a className="ad-thumb" href={`/slides/${slide.file}`} target="_blank" rel="noreferrer">
-        <img src={`/slides/${slide.file}`} alt="" loading="lazy" />
+      <a className="ad-thumb" href={bgUrl(`/slides/${slide.file}`)} target="_blank" rel="noreferrer">
+        <img src={bgUrl(`/slides/${slide.file}`)} alt="" loading="lazy" />
       </a>
       <div className="ad-slide-body">
         <input className="ad-title" value={title} aria-label="Slide name" onChange={(e) => setTitle(e.target.value)} onBlur={() => title !== slide.title && void update({ title })} />

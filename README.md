@@ -53,6 +53,7 @@ Open http://localhost:5175/admin and set the admin password (first run).
 | `DATA_DIR` | `./data` (`/data` in the image) | `admin.json`, `settings.json`, `slides.json`, `slides/` |
 | `ADMIN_PASSWORD` | (empty) | Set it to skip the first-run setup screen |
 | `GAME_NAME` | `Menu` | Standalone name; the admin's "Name" setting wins over it |
+| `BASE_PATH` | (empty) | Path prefix behind your own reverse proxy, e.g. `/menu` (the proxy strips it). On a box the box sets `BG_BASE_PATH` |
 | `TZ` | server's | Fallback time zone, used only when neither the admin setting nor the weather location gives one |
 
 The time zone for schedules is chosen in this order: the admin's setting, the venue's

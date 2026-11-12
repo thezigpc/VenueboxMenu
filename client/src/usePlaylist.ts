@@ -3,6 +3,7 @@
 // that reloads during an outage still has its menu).
 
 import { useEffect, useRef, useState } from "react";
+import { bgUrl } from "@bargames/sdk/client";
 import type { Playlist } from "@menu/shared";
 
 const STORE_KEY = "menu.lastPlaylist";
@@ -46,7 +47,7 @@ export function usePlaylist(opts: { intervalMs: number; reloadOnNewBuild?: boole
 
     const tick = async () => {
       try {
-        const res = await fetch("/api/playlist", { cache: "no-store", headers: etag ? { "if-none-match": etag } : {} });
+        const res = await fetch(bgUrl("/api/playlist"), { cache: "no-store", headers: etag ? { "if-none-match": etag } : {} });
         if (res.status === 200) {
           const p = (await res.json()) as Playlist;
           etag = res.headers.get("etag") ?? "";

@@ -3,6 +3,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { staffSignIn, VenueAnnouncement } from "@bargames/gamekit/client";
+import { basePath, bgUrl } from "@bargames/sdk/client";
 import type { AdminState } from "@menu/shared";
 import { api, ApiError, getToken, setToken, type AuthStatus } from "../api";
 import { useVenue } from "../useVenue";
@@ -110,7 +111,7 @@ export function AdminPage() {
       }
       // Staff who opened this page from the venue box's admin don't need the password.
       // Resolves undefined standalone (and for everyone else), so the normal form shows.
-      const staffToken = await staffSignIn("");
+      const staffToken = await staffSignIn(basePath());
       if (staffToken) {
         setToken(staffToken);
         setPhase({ kind: "ready" });
@@ -189,10 +190,10 @@ export function AdminPage() {
           <header className="ad-header">
             <h1>Menu admin</h1>
             <nav>
-              <a href="/tv" target="_blank" rel="noreferrer">
+              <a href={bgUrl("/tv")} target="_blank" rel="noreferrer">
                 TV view
               </a>
-              <a href="/" target="_blank" rel="noreferrer">
+              <a href={bgUrl("/")} target="_blank" rel="noreferrer">
                 Phone view
               </a>
               <button className="link" onClick={() => void signOut()}>
@@ -219,7 +220,7 @@ export function AdminPage() {
                 <section className="card">
                   <h2>Preview</h2>
                   <div className="ad-preview">
-                    <iframe src="/tv?preview=1" title="TV preview" tabIndex={-1} />
+                    <iframe src={bgUrl("/tv?preview=1")} title="TV preview" tabIndex={-1} />
                   </div>
                   <p className="muted small">What the TVs show, live. Changes reach the TVs within a few seconds.</p>
                 </section>

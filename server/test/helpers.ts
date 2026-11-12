@@ -86,11 +86,21 @@ export interface TestApp {
   stop(): Promise<void>;
 }
 
-export async function startApp(opts: { coreUrl?: string; token?: string; adminPassword?: string; gameName?: string } = {}): Promise<TestApp> {
+export async function startApp(
+  opts: { coreUrl?: string; token?: string; adminPassword?: string; gameName?: string; clientDist?: string; basePath?: string } = {},
+): Promise<TestApp> {
   const dataDir = mkdtempSync(path.join(os.tmpdir(), "menu-test-"));
   const net = fakeNet();
   const bg = makeBarGames({ defaultName: opts.gameName || "Menu", coreUrl: opts.coreUrl ?? "", token: opts.token ?? "" });
-  const menu = await createApp({ dataDir, bg, adminPassword: opts.adminPassword, gameName: opts.gameName, fetch: net.fetch });
+  const menu = await createApp({
+    dataDir,
+    bg,
+    adminPassword: opts.adminPassword,
+    gameName: opts.gameName,
+    clientDist: opts.clientDist,
+    basePath: opts.basePath,
+    fetch: net.fetch,
+  });
   const server: Server = createServer(menu.app);
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

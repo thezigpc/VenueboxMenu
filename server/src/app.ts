@@ -6,7 +6,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import express, { type Request, type Response } from "express";
 import type { BarGames } from "@bargames/sdk/server";
-import { adminRouter, createAdminAuth, createJsonStore, log, type AdminAuth } from "@bargames/gamekit/server";
+import { adminRouter, createAdminAuth, createJsonStore, log, serveSpa, type AdminAuth } from "@bargames/gamekit/server";
 import { DEFAULT_NAME, type AdminState, type Location, type Playlist, type Units } from "@menu/shared";
 import { venueFacts, type VenueFacts } from "./bargames.js";
 import { MAX_HEIGHT, MAX_UPLOAD_MB, MAX_WIDTH } from "./images.js";
@@ -20,6 +20,8 @@ export interface AppOptions {
   /** GAME_NAME env (standalone default name). */
   gameName?: string;
   clientDist?: string;
+  /** Path prefix the page runs under (SDK 0.10.0), e.g. "/menu". Default: bg.basePath (BG_BASE_PATH / BASE_PATH). */
+  basePath?: string;
   /** Outgoing HTTP (Open-Meteo); tests pass a fake. */
   fetch?: typeof fetch;
 }
@@ -265,11 +267,10 @@ export async function createApp(o: AppOptions): Promise<MenuApp> {
 
   // ----------------------------------------------------------------- client
   if (hasClient && o.clientDist) {
-    app.use(express.static(o.clientDist, { index: false, maxAge: "1h" }));
-    app.get("*", (_req, res) => {
-      res.set("Cache-Control", "no-cache");
-      res.sendFile(indexHtml);
-    });
+    // index.html gets the prefix injected (<meta name="bargames-base"> + <base href>), so the
+    // client finds "/menu/api/..." and "/menu/slides/..." behind a proxy that strips "/menu".
+    // At the root (no prefix) the HTML goes out untouched.
+    serveSpa(app, { dist: o.clientDist, basePath: o.basePath ?? bg.basePath });
   } else {
     log.warn("boot", "client build not found; serving the API only", { path: o.clientDist });
   }

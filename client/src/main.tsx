@@ -1,13 +1,17 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { ErrorBoundary } from "@bargames/gamekit/client";
+import { basePath } from "@bargames/sdk/client";
 import { PhonePage } from "./pages/PhonePage";
 import { TvPage } from "./pages/TvPage";
 import { AdminPage } from "./pages/AdminPage";
 import "./index.css";
 
 // Three pages, one per path (bargames.json routes: player "/", table "/tv", host "/admin").
-const path = location.pathname.replace(/\/+$/, "") || "/";
+// Under a prefix (SDK 0.10.0) the page is at /menu/tv: drop the prefix before matching.
+const base = basePath();
+const bare = base && (location.pathname === base || location.pathname.startsWith(base + "/")) ? location.pathname.slice(base.length) : location.pathname;
+const path = bare.replace(/\/+$/, "") || "/";
 const isTv = path === "/tv";
 const Page = isTv ? TvPage : path === "/admin" ? AdminPage : PhonePage;
 

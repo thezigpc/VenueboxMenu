@@ -2,7 +2,7 @@
 // what's on later (with when), the weather, and on a box the venue's extras.
 
 import { BackToGames, useGameName, VenueAnnouncement } from "@bargames/gamekit/client";
-import { isOnBox } from "@bargames/sdk/client";
+import { basePath, bgUrl, isOnBox } from "@bargames/sdk/client";
 import { activeSlides, describeSchedule, DEFAULT_NAME, type PublicSlide } from "@menu/shared";
 import { useNow, usePlaylist } from "../usePlaylist";
 import { useVenue } from "../useVenue";
@@ -10,8 +10,8 @@ import { WeatherCard } from "../Weather";
 
 function SlideImage({ slide }: { slide: PublicSlide }) {
   return (
-    <a className="ph-slide" href={slide.url} target="_blank" rel="noreferrer">
-      <img src={slide.url} alt={slide.title} width={slide.width} height={slide.height} loading="lazy" decoding="async" />
+    <a className="ph-slide" href={bgUrl(slide.url)} target="_blank" rel="noreferrer">
+      <img src={bgUrl(slide.url)} alt={slide.title} width={slide.width} height={slide.height} loading="lazy" decoding="async" />
     </a>
   );
 }
@@ -19,7 +19,7 @@ function SlideImage({ slide }: { slide: PublicSlide }) {
 export function PhonePage() {
   const { playlist, loaded, clockOffset } = usePlaylist({ intervalMs: 30_000 });
   const venue = useVenue();
-  const name = useGameName("", playlist?.name || DEFAULT_NAME);
+  const name = useGameName(basePath(), playlist?.name || DEFAULT_NAME);
   const now = useNow(30_000, clockOffset);
   const logo = isOnBox(venue) ? venue.game.theme.logoUrl : undefined;
 

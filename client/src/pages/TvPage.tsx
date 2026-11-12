@@ -4,7 +4,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
-import { activeAnnouncement, getVenue, isOnBox, tableMode, type VenueContext } from "@bargames/sdk/client";
+import { activeAnnouncement, bgUrl, getVenue, isOnBox, tableMode, type VenueContext } from "@bargames/sdk/client";
 import { activeSlides, describeWeather, initialRotation, nextItem, type Playlist, type RotationState, type ShowItem, type Transition } from "@menu/shared";
 import { useNow, usePlaylist } from "../usePlaylist";
 import { useVenue } from "../useVenue";
@@ -79,7 +79,7 @@ function useSlideshow(playlist: Playlist | null, clockOffset: number): Layer[] {
           picked = r.item;
           break;
         }
-        if (await preload(r.item.slide.url)) {
+        if (await preload(bgUrl(r.item.slide.url))) {
           picked = r.item;
           break;
         }
@@ -210,7 +210,7 @@ function LayerView({ layer, name, venue }: { layer: Layer; name: string; venue: 
   const it = layer.item;
   return (
     <div className={`tv-layer${layer.transition ? ` tv-in-${layer.transition}` : ""}`}>
-      {it.kind === "slide" && <img className="tv-img" src={it.slide.url} alt={it.slide.title} />}
+      {it.kind === "slide" && <img className="tv-img" src={bgUrl(it.slide.url)} alt={it.slide.title} />}
       {it.kind === "weather" && layer.weather && <WeatherSlide weather={layer.weather.data} forecast={layer.weather.forecast} />}
       {it.kind === "empty" && <ComingSoon name={name} venue={venue} />}
     </div>

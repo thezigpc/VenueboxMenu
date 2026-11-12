@@ -1,6 +1,8 @@
-// HTTP helpers. The client is always served by the server (Vite proxies in dev), so every
-// URL is relative.
+// HTTP helpers. The client is always served by the server (Vite proxies in dev). Paths are
+// written from the root ("/api/...") and go through bgUrl, which adds the prefix the page
+// runs under on a box or behind a proxy ("/menu/api/..."; SDK 0.10.0).
 
+import { bgUrl } from "@bargames/sdk/client";
 import type { AdminState, Settings, Slide } from "@menu/shared";
 
 const TOKEN_KEY = "menu.adminToken";
@@ -43,7 +45,7 @@ async function request<T>(method: string, path: string, body?: unknown, extraHea
   }
   let res: Response;
   try {
-    res = await fetch(path, { method, headers, body: payload, cache: "no-store" });
+    res = await fetch(bgUrl(path), { method, headers, body: payload, cache: "no-store" });
   } catch {
     throw new ApiError("Can't reach the server. Check the connection and try again.", 0);
   }

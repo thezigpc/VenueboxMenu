@@ -1,18 +1,19 @@
 # Bar Games integration: Menu (app)
 
-**Level 1, `kind: "app"`, SDK 0.8.0, game kit 0.5.1.** An app (formerly "display module") has no rooms, players, events or
+**Level 1, `kind: "app"`, SDK 0.10.0, game kit 0.6.0.** An app (formerly "display module") has no rooms, players, events or
 commands. What it takes from the box is the venue's name, theme, location, time zone,
 units, games-list address and announcement.
 
 ## Manifest
 `bargames.json`: id `menu`, `kind: "app"`, port 3005, routes `/` (phone), `/tv`
 (TV), `/admin` (host), `network.internet: true` (Open-Meteo), `env.DATA_DIR=/data`,
-256m. `events` and `commands` are empty. `npx bargames validate .` passes (with the
+256m. `events` and `commands` are empty. `routing.basePath: true` (SDK 0.10.0: it runs under
+`https://<venue host>/menu/`). `npx bargames validate .` passes (with the
 expected "not pinned by digest" warning).
 
-## `npx bargames check` (SDK 0.8.0 mock box, server on a spare port)
+## `npx bargames check` (SDK 0.10.0 mock box with `--base /menu`, server on a spare port)
 ```
-menu@0.4.0 · level 1 · http://127.0.0.1:3106
+menu@0.5.0 · level 1 · http://127.0.0.1:3116
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -31,6 +32,27 @@ Checked by hand through the mock gateway (`--announce`). The mock lists the menu
 - Phone: mock theme; the kit's `VenueAnnouncement` at the top; `BackToGames` with "Also
   playing" at the bottom.
 - No console errors.
+
+## Path routing (SDK 0.10.0, `https://<venue host>/menu/`)
+- The gateway strips `/menu`, so the server's routes don't change. The prefix comes from
+  `BG_BASE_PATH` (box) or `BASE_PATH` (self-hosted); unset, the menu runs at the root as before.
+- `index.html` is served by the kit's `serveSpa(app, { dist, basePath: bg.basePath })`,
+  which injects `<meta name="bargames-base">` and `<base href="/menu/">`. Vite builds with
+  `base: "./"`.
+- The client adds the prefix with the SDK's `bgUrl()`: every API call (`client/src/api.ts`,
+  `usePlaylist.ts`), slide images (the playlist still hands out `/slides/<file>`), the
+  admin's links to the TV and phone pages and its TV preview iframe. `main.tsx` strips
+  `basePath()` before picking the page. The kit's `staffSignIn` and `useGameName` get
+  `basePath()` as their server URL.
+- Shared origin: browser storage keys are `menu.adminToken` and `menu.lastPlaylist`. The
+  menu sets no cookies and has no service worker.
+- Tests: `server/test/basepath.test.ts` (prefix injected on every page, routes unchanged,
+  untouched at the root). By hand on `mock-box --base /menu`, through the mock gateway:
+  - phone, TV (slides, QR, announcement) and admin (box password, an upload, links, the
+    preview) all load under `/menu/`;
+  - staff sign-in through `/__bargames/staff?next=/menu/admin` works;
+  - no 4xx responses and no page errors;
+  - the same pages at the root, standalone, are unchanged.
 
 ## Server (`server/src/bargames.ts`, `server/src/app.ts`)
 - `createBarGames({ gameId: "menu" })`. The middleware is mounted before `/api`, the
@@ -105,7 +127,7 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:<version>` (0.4.0 is on SDK 0.8.0, kit 0.5.1), published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.5.0 is on SDK 0.10.0, kit 0.6.0), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
 - Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
   anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the
