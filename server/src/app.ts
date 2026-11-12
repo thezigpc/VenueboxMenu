@@ -154,7 +154,9 @@ export async function createApp(o: AppOptions): Promise<MenuApp> {
   );
 
   // ----------------------------------------------------------------- admin
-  const admin = adminRouter({ auth, clientIp: (req) => bg.clientIp(req) });
+  // Staff signed in to the venue box's admin get a session without the password (SDK 0.7.0).
+  // isStaff trusts the gateway's headers only on a box, so standalone it's always false.
+  const admin = adminRouter({ auth, clientIp: (req) => bg.clientIp(req), trusted: (req) => bg.isStaff(req) });
 
   admin.get(
     "/state",

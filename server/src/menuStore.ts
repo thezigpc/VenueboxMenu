@@ -23,7 +23,16 @@ export type Result<T> = { ok: true; value: T } | { ok: false; error: string; sta
 
 function isSlide(v: unknown): v is Slide {
   const s = v as Slide;
-  return !!s && typeof s.id === "string" && typeof s.file === "string" && /^[\w-]+\.(jpg|png|webp)$/.test(s.file);
+  // Any plain file name in slides/ (no paths): slides placed by hand, e.g. "sample-1.jpeg",
+  // must survive, or the next save would drop them from slides.json.
+  return (
+    !!s &&
+    typeof s.id === "string" &&
+    s.id.length > 0 &&
+    typeof s.file === "string" &&
+    /^[\w][\w.-]{0,120}\.(jpe?g|png|webp)$/i.test(s.file) &&
+    !s.file.includes("..")
+  );
 }
 
 function slidesFromStored(raw: unknown): Slide[] {

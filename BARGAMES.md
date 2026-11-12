@@ -1,6 +1,6 @@
 # Bar Games integration: Menu (app)
 
-**Level 1, `kind: "app"`, SDK 0.6.0.** An app (formerly "display module") has no rooms, players, events or
+**Level 1, `kind: "app"`, SDK 0.7.0, game kit 0.4.0.** An app (formerly "display module") has no rooms, players, events or
 commands. What it takes from the box is the venue's name, theme, location, time zone,
 units, games-list address and announcement.
 
@@ -10,9 +10,9 @@ units, games-list address and announcement.
 256m. `events` and `commands` are empty. `npx bargames validate .` passes (with the
 expected "not pinned by digest" warning).
 
-## `npx bargames check` (SDK 0.6.0 mock box, server on a spare port)
+## `npx bargames check` (SDK 0.7.0 mock box, server on a spare port)
 ```
-menu@0.2.0 · level 1 · http://127.0.0.1:3106
+menu@0.3.0 · level 1 · http://127.0.0.1:3106
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -40,6 +40,13 @@ Checked by hand through the mock gateway (`--announce`). The mock lists the menu
 - `venueFacts()` reads `venue.location`, `venue.timezone` and `venue.units`. These are
   the defaults for the weather and schedules; the admin's own settings override them.
   If the box can't be reached, the SDK falls back to its last context.
+- Staff sign-in (SDK 0.7.0): `routes.admin` is `/admin`, and the kit's `adminRouter`
+  gets `trusted: (req) => bg.isStaff(req)`. The admin page calls `staffSignIn()` before
+  the password form. Staff who open the menu's settings from the box admin go straight
+  in. `isStaff` trusts the gateway's headers only on a box, so standalone is unchanged
+  (tested both ways in `server/test/bargames.test.ts`). Checked in a browser on the mock
+  box: `/__bargames/staff?next=/admin` opens the admin without the password, and
+  `?off=1` brings the form back.
 - Admin login uses the kit's `adminRouter` and `clientIp` (`bg.clientIp`). Per-IP
   lockout is off standalone (behind Cloudflare, a whole venue shares one IP) and on
   with a box.
@@ -89,7 +96,7 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:<version>` (0.2.0 is on SDK 0.6.0), published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.3.0 is on SDK 0.7.0), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
 - Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
   anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the

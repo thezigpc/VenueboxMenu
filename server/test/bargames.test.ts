@@ -28,6 +28,13 @@ describe("standalone", () => {
     assert.equal(s.venue, null);
   });
 
+  test("gateway staff headers are ignored standalone", async () => {
+    const staff = { "x-bargames-via": "1", "x-bargames-staff": "1" };
+    const status = (await (await fetch(t.url + "/api/admin/status", { headers: staff })).json()) as { trusted: boolean };
+    assert.equal(status.trusted, false);
+    assert.equal((await fetch(t.url + "/api/admin/trusted", { method: "POST", headers: staff })).status, 403);
+  });
+
   test("status needs the box's token", async () => {
     assert.equal((await t.get("/__bargames/status")).status, 401);
   });
@@ -95,6 +102,17 @@ describe("on a box", () => {
     assert.equal(p.weather?.data.label, "Seattle, WA");
     assert.equal(p.weather?.data.units, "metric");
     assert.ok(t.net.calls.some((u) => u.includes("latitude=47.6062") && u.includes("timezone=America%2FLos_Angeles")));
+  });
+
+  test("staff signed in to the box get an admin session without the password", async () => {
+    const staff = { "x-bargames-via": "1", "x-bargames-staff": "1" };
+    const status = (await (await fetch(t.url + "/api/admin/status", { headers: staff })).json()) as { trusted: boolean };
+    assert.equal(status.trusted, true);
+    const r = (await (await fetch(t.url + "/api/admin/trusted", { method: "POST", headers: staff })).json()) as { token: string };
+    assert.equal((await t.get("/api/admin/state", r.token)).status, 200);
+    // Without the gateway's word (a guest, or a direct request) there's no shortcut.
+    assert.equal((await fetch(t.url + "/api/admin/trusted", { method: "POST", headers: { "x-bargames-staff": "1" } })).status, 403);
+    assert.equal((await fetch(t.url + "/api/admin/trusted", { method: "POST", headers: { "x-bargames-via": "1" } })).status, 403);
   });
 
   test("the admin's own choices override the venue's", async () => {

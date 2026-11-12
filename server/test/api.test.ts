@@ -157,6 +157,26 @@ describe("admin and playlist", () => {
   });
 });
 
+test("slides placed by hand in DATA_DIR survive a save", async () => {
+  const { mkdirSync, writeFileSync, readFileSync } = await import("node:fs");
+  const { MenuStore } = await import("../src/menuStore.js");
+  const dir = (await import("node:fs")).mkdtempSync(path.join((await import("node:os")).tmpdir(), "menu-hand-"));
+  mkdirSync(path.join(dir, "slides"));
+  writeFileSync(path.join(dir, "slides", "sample-1.jpeg"), await makeImage(320, 180));
+  writeFileSync(path.join(dir, "slides", "Sample_2.PNG"), await makeImage(320, 180, "png"));
+  writeFileSync(
+    path.join(dir, "slides.json"),
+    JSON.stringify({ slides: [{ id: "s1", file: "sample-1.jpeg", title: "Sample 1" }, { id: "s2", file: "Sample_2.PNG" }, { id: "bad", file: "../etc/passwd.jpg" }] }),
+  );
+  const store = new MenuStore(dir);
+  await store.init();
+  assert.deepEqual(store.getSlides().map((s) => s.id), ["s1", "s2"]);
+  await store.updateSlide("s2", { hidden: true });
+  const saved = JSON.parse(readFileSync(path.join(dir, "slides.json"), "utf8")) as { slides: Slide[] };
+  assert.deepEqual(saved.slides.map((s) => [s.id, s.file, s.hidden]), [["s1", "sample-1.jpeg", false], ["s2", "Sample_2.PNG", true]]);
+  (await import("node:fs")).rmSync(dir, { recursive: true, force: true });
+});
+
 test("ADMIN_PASSWORD closes the setup screen", async () => {
   const t = await startApp({ adminPassword: "from-env-password" });
   try {

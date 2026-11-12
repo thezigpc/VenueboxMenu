@@ -2,7 +2,7 @@
 // weather, and watch a live preview of the TV.
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { VenueAnnouncement } from "@bargames/gamekit/client";
+import { staffSignIn, VenueAnnouncement } from "@bargames/gamekit/client";
 import type { AdminState } from "@menu/shared";
 import { api, ApiError, getToken, setToken, type AuthStatus } from "../api";
 import { useVenue } from "../useVenue";
@@ -82,10 +82,19 @@ export function AdminPage() {
       if (status.authenticated && getToken()) {
         setPhase({ kind: "ready" });
         setState(await api.state());
-      } else {
-        setToken("");
-        setPhase({ kind: "auth", status });
+        return;
       }
+      // Staff who opened this page from the venue box's admin don't need the password.
+      // Resolves undefined standalone (and for everyone else), so the normal form shows.
+      const staffToken = await staffSignIn("");
+      if (staffToken) {
+        setToken(staffToken);
+        setPhase({ kind: "ready" });
+        setState(await api.state());
+        return;
+      }
+      setToken("");
+      setPhase({ kind: "auth", status });
     } catch (err) {
       setPhase({ kind: "offline", message: err instanceof Error ? err.message : "Can't reach the server." });
     }
