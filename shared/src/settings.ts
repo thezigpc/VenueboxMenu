@@ -1,7 +1,14 @@
 // Settings defaults and validation (the server checks every save with these).
 
 import { isValidTimeZone, normalizeSchedule } from "./schedule.js";
-import type { Location, Settings, Slide, Transition } from "./types.js";
+import type { Corner, Location, Settings, Slide, Transition } from "./types.js";
+
+export const CORNERS: readonly { id: Corner; label: string }[] = [
+  { id: "top-left", label: "Top left" },
+  { id: "top-right", label: "Top right" },
+  { id: "bottom-left", label: "Bottom left" },
+  { id: "bottom-right", label: "Bottom right" },
+];
 
 export const TRANSITIONS: readonly { id: Transition; label: string }[] = [
   { id: "crossfade", label: "Crossfade" },
@@ -26,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
     location: null,
     units: "auto",
   },
+  overlay: { time: false, date: false, weather: false, position: "top-right", hour24: false },
 };
 
 export const LIMITS = {
@@ -59,7 +67,7 @@ export function normalizeLocation(v: unknown): Result<Location | null> {
 export function mergeSettings(current: Settings, patch: unknown): Result<Settings> {
   if (!patch || typeof patch !== "object") return { ok: false, error: "Nothing to save." };
   const p = patch as Record<string, unknown>;
-  const next: Settings = { ...current, weather: { ...current.weather } };
+  const next: Settings = { ...current, weather: { ...current.weather }, overlay: { ...current.overlay } };
 
   if ("name" in p) {
     if (typeof p.name !== "string") return { ok: false, error: "Name must be text." };
@@ -79,6 +87,20 @@ export function mergeSettings(current: Settings, patch: unknown): Result<Setting
       return { ok: false, error: "That isn't a time zone this server knows (e.g. America/New_York)." };
     }
     next.timezone = p.timezone;
+  }
+  if ("overlay" in p) {
+    if (!p.overlay || typeof p.overlay !== "object") return { ok: false, error: "Bad clock settings." };
+    const o = p.overlay as Record<string, unknown>;
+    const no = (next.overlay = { ...current.overlay });
+    for (const k of ["time", "date", "weather", "hour24"] as const) {
+      if (!(k in o)) continue;
+      if (typeof o[k] !== "boolean") return { ok: false, error: "Clock options must be true or false." };
+      no[k] = o[k] as boolean;
+    }
+    if ("position" in o) {
+      if (!CORNERS.some((c) => c.id === o.position)) return { ok: false, error: "Pick a corner for the clock." };
+      no.position = o.position as Corner;
+    }
   }
   if ("weather" in p) {
     if (!p.weather || typeof p.weather !== "object") return { ok: false, error: "Bad weather settings." };

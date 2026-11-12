@@ -32,6 +32,17 @@ test("switching weather mode clamps the interval", () => {
   assert.equal(r.value.weather.every, 100);
 });
 
+test("clock overlay options", () => {
+  assert.deepEqual(DEFAULT_SETTINGS.overlay, { time: false, date: false, weather: false, position: "top-right", hour24: false });
+  const r = mergeSettings(DEFAULT_SETTINGS, { overlay: { time: true, position: "bottom-left" } });
+  assert.ok(r.ok);
+  assert.deepEqual(r.value.overlay, { time: true, date: false, weather: false, position: "bottom-left", hour24: false });
+  assert.equal(mergeSettings(DEFAULT_SETTINGS, { overlay: { position: "middle" } }).ok, false);
+  assert.equal(mergeSettings(DEFAULT_SETTINGS, { overlay: { time: "yes" } }).ok, false);
+  // Settings saved before the clock existed load with it off.
+  assert.deepEqual(settingsFromStored({ defaultDurationSec: 12 }).overlay, DEFAULT_SETTINGS.overlay);
+});
+
 test("a damaged settings file falls back to defaults", () => {
   assert.deepEqual(settingsFromStored(null), DEFAULT_SETTINGS);
   assert.deepEqual(settingsFromStored({ defaultDurationSec: "lots" }), DEFAULT_SETTINGS);

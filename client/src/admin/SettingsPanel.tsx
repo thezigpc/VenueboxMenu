@@ -1,7 +1,7 @@
 // Settings: slide time, transition, time zone, name (standalone), and the weather.
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { LIMITS, TRANSITIONS, type AdminState, type Location, type Settings } from "@menu/shared";
+import { CORNERS, LIMITS, TRANSITIONS, type AdminState, type Location, type Settings } from "@menu/shared";
 import { api } from "../api";
 
 type Act = (fn: () => Promise<unknown>, ok?: string) => Promise<boolean>;
@@ -126,6 +126,9 @@ export function SettingsPanel({ state, act }: { state: AdminState; act: Act }) {
   const dirty = JSON.stringify(draft) !== JSON.stringify(state.settings);
   const w = draft.weather;
   const setW = (patch: Partial<Settings["weather"]>) => setDraft((d) => ({ ...d, weather: { ...d.weather, ...patch } }));
+  const ov = draft.overlay;
+  const setO = (patch: Partial<Settings["overlay"]>) => setDraft((d) => ({ ...d, overlay: { ...d.overlay, ...patch } }));
+  const hasLocation = !!(w.location ?? state.venue?.location);
   const everyRange = w.mode === "minutes" ? LIMITS.weatherEveryMinutes : LIMITS.weatherEverySlides;
 
   const save = async (e: FormEvent) => {
@@ -186,10 +189,76 @@ export function SettingsPanel({ state, act }: { state: AdminState; act: Act }) {
         </span>
       </label>
 
+      <h3>Clock on the TVs</h3>
+      <p className="muted small">A small readout in a corner of the TV, over the slides.</p>
+      <div className="ad-row ad-checks">
+        <label className="ad-inline">
+          <input type="checkbox" checked={ov.time} onChange={(e) => setO({ time: e.target.checked })} /> Time
+        </label>
+        <label className="ad-inline">
+          <input type="checkbox" checked={ov.date} onChange={(e) => setO({ date: e.target.checked })} /> Date
+        </label>
+        <label className="ad-inline">
+          <input type="checkbox" checked={ov.weather} onChange={(e) => setO({ weather: e.target.checked })} /> Current weather
+        </label>
+      </div>
+      {(ov.time || ov.date || ov.weather) && (
+        <div className="ad-row">
+          <label>
+            Corner
+            <select value={ov.position} onChange={(e) => setO({ position: e.target.value as Settings["overlay"]["position"] })}>
+              {CORNERS.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {ov.time && (
+            <label>
+              Clock
+              <select value={ov.hour24 ? "24" : "12"} onChange={(e) => setO({ hour24: e.target.value === "24" })}>
+                <option value="12">12-hour (4:30 PM)</option>
+                <option value="24">24-hour (16:30)</option>
+              </select>
+            </label>
+          )}
+        </div>
+      )}
+      {ov.weather && !hasLocation && <p className="error small">The current weather needs a location: set one under Weather below.</p>}
+
       <h3>Weather</h3>
       <label className="ad-inline">
         <input type="checkbox" checked={w.enabled} onChange={(e) => setW({ enabled: e.target.checked })} /> Show a weather slide
       </label>
+      {(w.enabled || ov.weather) && (
+        <>
+          <div className="ad-field">
+            <span>Location</span>
+            <LocationField
+              value={w.location}
+              onChange={(location) => setW({ location })}
+              venueLocation={state.venue?.location ?? null}
+              onBox={onBox}
+              onTimezone={(tz) => setDraft((d) => (d.timezone || (onBox && state.venue?.timezone) ? d : { ...d, timezone: tz }))}
+            />
+          </div>
+          <div className="ad-row">
+            <label>
+              Units
+              <select value={w.units} onChange={(e) => setW({ units: e.target.value as Settings["weather"]["units"] })}>
+                <option value="auto">{onBox && venueUnits ? `Venue's (${venueUnits === "metric" ? "°C" : "°F"})` : "Default (°F)"}</option>
+                <option value="imperial">°F, mph</option>
+                <option value="metric">°C, km/h</option>
+              </select>
+            </label>
+          </div>
+          <p className={`small ${state.weatherStatus.ok ? "muted" : "error"}`}>
+            Weather: {state.weatherStatus.message}
+            {state.weatherStatus.fetchedAt && ` (updated ${new Date(state.weatherStatus.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })})`}
+          </p>
+        </>
+      )}
       {w.enabled && (
         <>
           <div className="ad-row">
@@ -231,29 +300,7 @@ export function SettingsPanel({ state, act }: { state: AdminState; act: Act }) {
                 <option value="days">Now + next 3 days</option>
               </select>
             </label>
-            <label>
-              Units
-              <select value={w.units} onChange={(e) => setW({ units: e.target.value as Settings["weather"]["units"] })}>
-                <option value="auto">{onBox && venueUnits ? `Venue's (${venueUnits === "metric" ? "°C" : "°F"})` : "Default (°F)"}</option>
-                <option value="imperial">°F, mph</option>
-                <option value="metric">°C, km/h</option>
-              </select>
-            </label>
           </div>
-          <div className="ad-field">
-            <span>Location</span>
-            <LocationField
-              value={w.location}
-              onChange={(location) => setW({ location })}
-              venueLocation={state.venue?.location ?? null}
-              onBox={onBox}
-              onTimezone={(tz) => setDraft((d) => (d.timezone || (onBox && state.venue?.timezone) ? d : { ...d, timezone: tz }))}
-            />
-          </div>
-          <p className={`small ${state.weatherStatus.ok ? "muted" : "error"}`}>
-            Weather: {state.weatherStatus.message}
-            {state.weatherStatus.fetchedAt && ` (updated ${new Date(state.weatherStatus.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })})`}
-          </p>
         </>
       )}
 

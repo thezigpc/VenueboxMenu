@@ -123,6 +123,21 @@ describe("admin and playlist", () => {
     assert.equal((await playlist()).weather, null);
   });
 
+  test("the clock overlay: off by default, time/date/weather on demand", async () => {
+    assert.equal((await playlist()).overlay, null);
+    await t.send("PUT", "/api/admin/settings", { overlay: { time: true, date: true, position: "bottom-right", hour24: true } }, token);
+    let p = await playlist();
+    assert.deepEqual(p.overlay, { time: true, date: true, position: "bottom-right", hour24: true, weather: null });
+    // The current weather in the corner works with the weather slide off.
+    await t.send("PUT", "/api/admin/settings", { overlay: { weather: true }, weather: { enabled: false, location: { latitude: 35.6, longitude: -82.55 } } }, token);
+    p = await playlist();
+    assert.equal(p.weather, null);
+    assert.equal(p.overlay?.weather?.now.temp, 61);
+    assert.equal(p.overlay?.weather?.units, "metric");
+    await t.send("PUT", "/api/admin/settings", { overlay: { time: false, date: false, weather: false } }, token);
+    assert.equal((await playlist()).overlay, null);
+  });
+
   test("weather that can't be fetched just isn't shown", async () => {
     await t.send("PUT", "/api/admin/settings", { weather: { enabled: true, location: { latitude: 10, longitude: 10 } } }, token);
     t.net.failing = true;

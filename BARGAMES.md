@@ -12,7 +12,7 @@ expected "not pinned by digest" warning).
 
 ## `npx bargames check` (SDK 0.8.0 mock box, server on a spare port)
 ```
-menu@0.3.2 · level 1 · http://127.0.0.1:3106
+menu@0.4.0 · level 1 · http://127.0.0.1:3106
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -105,7 +105,7 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:<version>` (0.3.2 is on SDK 0.8.0, kit 0.5.1), published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.4.0 is on SDK 0.8.0, kit 0.5.1), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
 - Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
   anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the

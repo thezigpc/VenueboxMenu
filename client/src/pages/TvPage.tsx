@@ -5,10 +5,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { activeAnnouncement, getVenue, isOnBox, tableMode, type VenueContext } from "@bargames/sdk/client";
-import { activeSlides, initialRotation, nextItem, type Playlist, type RotationState, type ShowItem, type Transition } from "@menu/shared";
+import { activeSlides, describeWeather, initialRotation, nextItem, type Playlist, type RotationState, type ShowItem, type Transition } from "@menu/shared";
 import { useNow, usePlaylist } from "../usePlaylist";
 import { useVenue } from "../useVenue";
-import { WeatherSlide } from "../Weather";
+import { WeatherIconSvg, WeatherSlide } from "../Weather";
 
 interface Layer {
   key: number;
@@ -217,6 +217,44 @@ function LayerView({ layer, name, venue }: { layer: Layer; name: string; venue: 
   );
 }
 
+/** "4:30 PM" / "16:30" and "Wednesday, November 12" in the venue's zone. */
+function formatClock(now: number, tz: string, hour24: boolean): { time: string; date: string } {
+  const fmt = (opts: Intl.DateTimeFormatOptions) => {
+    try {
+      return new Intl.DateTimeFormat("en-US", { timeZone: tz, ...opts }).format(now);
+    } catch {
+      return new Intl.DateTimeFormat("en-US", opts).format(now);
+    }
+  };
+  return {
+    time: fmt({ hour: "numeric", minute: "2-digit", hourCycle: hour24 ? "h23" : "h12" }),
+    date: fmt({ weekday: "long", month: "long", day: "numeric" }),
+  };
+}
+
+/** The corner readout: time, date and/or the current weather, as the admin chose. */
+function ClockOverlay({ overlay: o, timezone, clockOffset, hideWeather }: { overlay: NonNullable<Playlist["overlay"]>; timezone: string; clockOffset: number; hideWeather: boolean }) {
+  // Ticks every second so the minute turns over on time; only this small box re-renders.
+  const now = useNow(1000, clockOffset);
+  const { time, date } = formatClock(now, timezone, o.hour24);
+  const w = !hideWeather ? o.weather : null;
+  if (!o.time && !o.date && !w) return null;
+  return (
+    <div className="tv-ov">
+      {o.time && <div className="tv-ov-time">{time}</div>}
+      {o.date && <div className="tv-ov-date">{date}</div>}
+      {w && (
+        <div className="tv-ov-wx">
+          <WeatherIconSvg icon={describeWeather(w.now.code).icon} isDay={w.now.isDay} />
+          <span>
+            {w.now.temp}°{w.units === "imperial" ? "F" : "C"}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function TvPage() {
   const preview = new URLSearchParams(location.search).has("preview");
   const { playlist, clockOffset } = usePlaylist({ intervalMs: preview ? 3000 : 5000, reloadOnNewBuild: !preview });
@@ -234,8 +272,16 @@ export function TvPage() {
     return () => document.documentElement.classList.remove("tv-root");
   }, []);
 
+  // The weather slide already shows the weather: don't repeat it in the corner.
+  const onWeatherSlide = layers[layers.length - 1]?.item.kind === "weather";
+  const overlay = playlist?.overlay ?? null;
+  const clock = overlay && playlist ? <ClockOverlay overlay={overlay} timezone={playlist.timezone} clockOffset={clockOffset} hideWeather={onWeatherSlide} /> : null;
+  // The QR code lives bottom-right; a clock there stacks above it instead of covering it.
+  const qr = playUrl ? <PlayQr url={playUrl} /> : null;
+  const sharesQrCorner = overlay?.position === "bottom-right";
+
   return (
-    <div className="tv-page">
+    <div className={`tv-page${announcement ? " has-announce" : ""}`}>
       {layers.map((l) => (
         <LayerView key={l.key} layer={l} name={name} venue={venue} />
       ))}
@@ -245,7 +291,13 @@ export function TvPage() {
           {announcement.text}
         </div>
       )}
-      {playUrl && <PlayQr url={playUrl} />}
+      {clock && !sharesQrCorner && <div className={`tv-corner tv-${overlay!.position}`}>{clock}</div>}
+      {(qr || (clock && sharesQrCorner)) && (
+        <div className="tv-corner tv-bottom-right">
+          {sharesQrCorner && clock}
+          {qr}
+        </div>
+      )}
     </div>
   );
 }

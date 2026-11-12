@@ -22,6 +22,11 @@ game: no rooms or players).
   Shows now plus the next 6 hours, or now plus the next 3 days. It comes up every N
   minutes or after every N slides. If a fetch fails, the last forecast stays up for
   3 hours; after that the weather slide is skipped (a TV never shows an error).
+- **Clock on the TVs (optional):** time, date and/or the current weather, each switched
+  on separately, in the corner you pick, with a 12- or 24-hour clock. It uses the venue's
+  time zone and the server's clock. It moves below the announcement strip when one is up,
+  stacks above the QR code if both are bottom-right, and drops the weather while the
+  weather slide is on screen. The weather readout works with the weather slide off.
 - **TV robustness:** polls every 5 s (an unchanged playlist is answered with a 304).
   Keeps the last good playlist through outages, also across reloads (localStorage).
   Skips images that won't load and reloads itself when the server is updated.

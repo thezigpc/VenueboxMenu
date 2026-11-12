@@ -57,6 +57,19 @@ export interface WeatherSettings {
   units: Units | "auto";
 }
 
+export type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+/** A small clock / weather readout in a corner of the TV, over the slides. */
+export interface OverlaySettings {
+  time: boolean;
+  date: boolean;
+  /** Current temperature and conditions (needs a weather location). */
+  weather: boolean;
+  position: Corner;
+  /** 24-hour clock ("16:30") instead of "4:30 PM". */
+  hour24: boolean;
+}
+
 export interface Settings {
   /** Standalone only: the name on the phone page (on a box the venue's name wins). "" = default. */
   name: string;
@@ -65,6 +78,7 @@ export interface Settings {
   /** IANA zone for schedules and weather times. "" = the venue's on a box, else the server's. */
   timezone: string;
   weather: WeatherSettings;
+  overlay: OverlaySettings;
 }
 
 export interface WeatherNow {
@@ -122,6 +136,8 @@ export interface Playlist {
     forecast: WeatherSettings["forecast"];
     data: Weather;
   } | null;
+  /** The TV's corner readout; null when it's off. */
+  overlay: (Omit<OverlaySettings, "weather"> & { weather: { now: WeatherNow; units: Units } | null }) | null;
   serverTime: number;
 }
 

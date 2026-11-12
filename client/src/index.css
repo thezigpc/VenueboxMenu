@@ -180,11 +180,75 @@ html.tv-root body {
   box-shadow: 0 calc(var(--u) * 0.4) calc(var(--u) * 2) rgba(0, 0, 0, 0.35);
 }
 
-.tv-qr {
+/* Corners for the clock and the QR code, inside the safe margins. */
+.tv-corner {
   position: absolute;
   z-index: 2;
-  right: var(--bg-safe-x, calc(var(--u) * 4));
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 1.5);
+}
+.tv-top-left,
+.tv-top-right {
+  top: var(--bg-safe-y, calc(var(--u) * 4));
+}
+.tv-bottom-left,
+.tv-bottom-right {
   bottom: var(--bg-safe-y, calc(var(--u) * 4));
+}
+.tv-top-left,
+.tv-bottom-left {
+  left: var(--bg-safe-x, calc(var(--u) * 4));
+  align-items: flex-start;
+}
+.tv-top-right,
+.tv-bottom-right {
+  right: var(--bg-safe-x, calc(var(--u) * 4));
+  align-items: flex-end;
+}
+/* Below the announcement strip when one is up. */
+.has-announce .tv-top-left,
+.has-announce .tv-top-right {
+  top: calc(var(--u) * 12);
+}
+
+.tv-ov {
+  display: flex;
+  flex-direction: column;
+  align-items: inherit;
+  padding: calc(var(--u) * 1.2) calc(var(--u) * 2);
+  border-radius: calc(var(--u) * 1.2);
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.tv-ov-time {
+  font-size: calc(var(--u) * 6);
+  font-weight: 700;
+}
+.tv-ov-date {
+  font-size: calc(var(--u) * 2.8);
+  font-weight: 600;
+  opacity: 0.85;
+}
+.tv-ov-wx {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 0.8);
+  font-size: calc(var(--u) * 3.6);
+  font-weight: 700;
+}
+.tv-ov-time + .tv-ov-wx,
+.tv-ov-date + .tv-ov-wx {
+  margin-top: calc(var(--u) * 0.6);
+}
+.tv-ov-wx .wx-icon {
+  width: calc(var(--u) * 5);
+  height: calc(var(--u) * 5);
+}
+
+.tv-qr {
   display: flex;
   align-items: center;
   gap: calc(var(--u) * 1.4);
@@ -731,4 +795,8 @@ button.link {
 .ad-save {
   margin-top: 16px;
   align-items: center;
+}
+.ad-checks {
+  gap: 8px 20px;
+  margin-bottom: 10px;
 }

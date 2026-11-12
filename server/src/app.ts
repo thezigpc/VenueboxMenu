@@ -85,8 +85,11 @@ export async function createApp(o: AppOptions): Promise<MenuApp> {
     const venue = await venueFacts(bg);
     const s = store.getSettings();
     const eff = await effective(venue);
-    const data = s.weather.enabled && eff.query ? await weather.get(eff.query) : null;
+    // Fetched for the weather slide, or for the clock's weather readout (either can be on alone).
+    const data = (s.weather.enabled || s.overlay.weather) && eff.query ? await weather.get(eff.query) : null;
     const timezone = eff.explicitTz || data?.timezone || serverTimeZone();
+    const o = s.overlay;
+    const overlayWeather = o.weather && data ? { now: data.now, units: data.units } : null;
     const body: Omit<Playlist, "version" | "serverTime"> = {
       build,
       name: displayName(venue),
@@ -106,7 +109,8 @@ export async function createApp(o: AppOptions): Promise<MenuApp> {
       defaultDurationSec: s.defaultDurationSec,
       transition: s.transition,
       timezone,
-      weather: data
+      overlay: o.time || o.date || overlayWeather ? { time: o.time, date: o.date, position: o.position, hour24: o.hour24, weather: overlayWeather } : null,
+      weather: data && s.weather.enabled
         ? { mode: s.weather.mode, every: s.weather.every, durationSec: s.weather.durationSec, forecast: s.weather.forecast, data }
         : null,
     };
@@ -169,13 +173,15 @@ export async function createApp(o: AppOptions): Promise<MenuApp> {
     safe(async (_req, res) => {
       const venue = await venueFacts(bg);
       const eff = await effective(venue);
-      const data = store.getSettings().weather.enabled && eff.query ? await weather.get(eff.query) : null;
+      const st = store.getSettings();
+      const wanted = st.weather.enabled || st.overlay.weather;
+      const data = wanted && eff.query ? await weather.get(eff.query) : null;
       const body: AdminState = {
         slides: store.getSlides(),
         settings: store.getSettings(),
         venue: venue ? { location: venue.location, timezone: venue.timezone, units: venue.units } : null,
         effective: { timezone: eff.explicitTz || data?.timezone || serverTimeZone(), units: eff.units, location: eff.location },
-        weatherStatus: store.getSettings().weather.enabled ? weather.status(eff.query) : { ok: false, message: "Weather is off.", fetchedAt: null },
+        weatherStatus: wanted ? weather.status(eff.query) : { ok: false, message: "Weather is off.", fetchedAt: null },
         limits: { maxUploadMb: MAX_UPLOAD_MB, maxSlides: MAX_SLIDES, maxWidth: MAX_WIDTH, maxHeight: MAX_HEIGHT },
       };
       res.json(body);
