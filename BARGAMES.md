@@ -1,6 +1,6 @@
 # Bar Games integration: Menu (app)
 
-**Level 1, `kind: "app"`, SDK 0.11.0, game kit 0.7.0.** An app (formerly "display module") has no rooms, players, events or
+**Level 1, `kind: "app"`, SDK 0.13.0, game kit 0.7.2.** An app (formerly "display module") has no rooms, players, events or
 commands. What it takes from the box is the venue's name, theme, location, time zone,
 units, games-list address and announcement.
 
@@ -13,7 +13,7 @@ expected "not pinned by digest" warning).
 
 ## `npx bargames check` (SDK 0.10.0 mock box with `--base /menu`, server on a spare port)
 ```
-menu@0.6.0 · level 1 · http://127.0.0.1:3116
+menu@0.6.1 · level 1 · http://127.0.0.1:3116
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -143,7 +143,7 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:<version>` (0.6.0 is on SDK 0.11.0, kit 0.7.0), published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.6.1 is on SDK 0.13.0, kit 0.7.2), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
 - Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
   anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the
