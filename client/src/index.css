@@ -601,10 +601,17 @@ label {
   font-size: 0.92rem;
   margin-top: 8px;
 }
-label.ad-inline {
+label.ad-inline,
+div.ad-inline,
+form.ad-inline {
+  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 6px;
+}
+.ad-time {
+  display: inline-flex;
+  gap: 4px;
 }
 .ad-settings > label,
 .ad-settings > .ad-row {

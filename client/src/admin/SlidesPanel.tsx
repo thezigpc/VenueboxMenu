@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { bgUrl } from "@bargames/sdk/client";
-import { DAY_SHORT, describeSchedule, isScheduledNow, TRANSITIONS, type AdminState, type Schedule, type Slide, type Transition, type Weekday } from "@menu/shared";
+import { DAY_SHORT, describeSchedule, isScheduledNow, LIMITS, TRANSITIONS, type AdminState, type Schedule, type Slide, type Transition, type Weekday } from "@menu/shared";
 import { api } from "../api";
 
 type Act = (fn: () => Promise<unknown>, ok?: string) => Promise<boolean>;
@@ -95,6 +95,38 @@ function Uploader({ state, setNotice, reload }: { state: AdminState; setNotice: 
 
 const ALL_DAYS: Weekday[] = [1, 2, 3, 4, 5, 6, 0];
 
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const HOURS = Array.from({ length: 24 }, (_, h) => ({ value: pad2(h), label: h === 0 ? "12 AM" : h === 12 ? "12 PM" : h < 12 ? `${h} AM` : `${h - 12} PM` }));
+
+/**
+ * "HH:MM" as two dropdowns (hour, then :00/:15/:30/:45). Not <input type="time">: on the
+ * box's touch screens its picker opens where touch can't reach, while dropdowns get the
+ * kit's big-button list there. A saved minute off the quarter hours stays selectable.
+ */
+function TimeSelect({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const [h = "00", m = "00"] = value.split(":");
+  const minutes = ["00", "15", "30", "45"];
+  if (!minutes.includes(m)) minutes.push(m), minutes.sort();
+  return (
+    <span className="ad-time">
+      <select aria-label={`${label}: hour`} value={h} onChange={(e) => onChange(`${e.target.value}:${m}`)}>
+        {HOURS.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <select aria-label={`${label}: minutes`} value={m} onChange={(e) => onChange(`${h}:${e.target.value}`)}>
+        {minutes.map((mm) => (
+          <option key={mm} value={mm}>
+            :{mm}
+          </option>
+        ))}
+      </select>
+    </span>
+  );
+}
+
 function ScheduleEditor({ initial, onSave, onCancel }: { initial: Schedule | null; onSave: (s: Schedule | null) => void; onCancel: () => void }) {
   const [days, setDays] = useState<Set<Weekday>>(new Set(initial?.days ?? [1, 2, 3, 4, 5]));
   const [allDay, setAllDay] = useState(!initial?.start);
@@ -128,12 +160,12 @@ function ScheduleEditor({ initial, onSave, onCancel }: { initial: Schedule | nul
       </label>
       {!allDay && (
         <div className="ad-times">
-          <label>
-            From <input type="time" value={start} onChange={(e) => setStart(e.target.value)} />
-          </label>
-          <label>
-            to <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
-          </label>
+          <div className="ad-inline">
+            From <TimeSelect label="From" value={start} onChange={setStart} />
+          </div>
+          <div className="ad-inline">
+            to <TimeSelect label="To" value={end} onChange={setEnd} />
+          </div>
         </div>
       )}
       <p className="muted small">{valid ? `Shows ${describeSchedule(draft)}${!allDay && end < start ? " (into the next morning)" : ""}.` : "Pick at least one day and two different times."}</p>
@@ -216,7 +248,23 @@ function SlideRow({
         <img src={bgUrl(`/slides/${slide.file}`)} alt="" loading="lazy" />
       </a>
       <div className="ad-slide-body">
-        <input className="ad-title" value={title} aria-label="Slide name" onChange={(e) => setTitle(e.target.value)} onBlur={() => title !== slide.title && void update({ title })} />
+        {/* A form so Enter (a real keyboard or the kit's) saves: leaving the field saves it. */}
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            (e.currentTarget.elements.namedItem("title") as HTMLInputElement | null)?.blur();
+          }}
+        >
+          <input
+            name="title"
+            className="ad-title"
+            value={title}
+            maxLength={LIMITS.titleLength}
+            aria-label="Slide name"
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => title !== slide.title && void update({ title })}
+          />
+        </form>
         <div className="ad-chips">
           {slide.hidden ? <span className="chip">Hidden</span> : onNow ? <span className="chip is-on">On now</span> : <span className="chip">Not on now</span>}
           <span className="chip">{describeSchedule(slide.schedule)}</span>
@@ -225,22 +273,28 @@ function SlideRow({
           </span>
         </div>
         <div className="ad-row ad-controls">
-          <label className="ad-inline">
-            <input
-              type="number"
-              min={3}
-              max={600}
-              inputMode="numeric"
-              placeholder={String(defaultDuration)}
-              value={duration}
-              onChange={(e) => setDuration(e.target.value)}
-              onBlur={saveDuration}
-              onKeyDown={(e) => e.key === "Enter" && saveDuration()}
-              className="ad-num"
-              aria-label="Seconds on screen"
-            />{" "}
-            sec
-          </label>
+          <form
+            className="ad-inline"
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveDuration();
+            }}
+          >
+            <label className="ad-inline">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={3}
+                placeholder={String(defaultDuration)}
+                value={duration}
+                onChange={(e) => setDuration(e.target.value.replace(/\D/g, ""))}
+                onBlur={saveDuration}
+                className="ad-num"
+                aria-label="Seconds on screen"
+              />{" "}
+              sec
+            </label>
+          </form>
           <select
             aria-label="Transition"
             value={slide.transition ?? ""}

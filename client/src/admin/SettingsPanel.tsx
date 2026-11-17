@@ -1,6 +1,6 @@
 // Settings: slide time, transition, time zone, name (standalone), and the weather.
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from "react";
 import { CORNERS, LIMITS, TRANSITIONS, type AdminState, type Location, type Settings } from "@menu/shared";
 import { api } from "../api";
 
@@ -16,6 +16,9 @@ function timeZones(): string[] {
 
 const fmtLoc = (l: Location) => l.label || `${l.latitude}, ${l.longitude}`;
 
+/** A number box's text as an integer: digits only ("" → 0, which the server rejects with a message). */
+const digits = (v: string): number => Number(v.replace(/\D/g, "").slice(0, 4)) || 0;
+
 function LocationField({ value, onChange, venueLocation, onBox, onTimezone }: { value: Location | null; onChange: (l: Location | null) => void; venueLocation: Location | null; onBox: boolean; onTimezone: (tz: string) => void }) {
   const [q, setQ] = useState("");
   const [results, setResults] = useState<{ label: string; latitude: number; longitude: number; timezone: string | null }[] | null>(null);
@@ -24,6 +27,14 @@ function LocationField({ value, onChange, venueLocation, onBox, onTimezone }: { 
   const [lat, setLat] = useState(value ? String(value.latitude) : "");
   const [lon, setLon] = useState(value ? String(value.longitude) : "");
   const [label, setLabel] = useState(value?.label ?? "");
+  const applyManual = () => {
+    if (lat && lon) onChange({ latitude: Number(lat), longitude: Number(lon), ...(label.trim() ? { label: label.trim() } : {}) });
+  };
+  const onManualKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    applyManual();
+  };
 
   const search = async () => {
     setError("");
@@ -59,6 +70,7 @@ function LocationField({ value, onChange, venueLocation, onBox, onTimezone }: { 
         <input
           type="search"
           placeholder="Search for a town or city"
+          maxLength={80}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
@@ -101,14 +113,14 @@ function LocationField({ value, onChange, venueLocation, onBox, onTimezone }: { 
       </button>
       {manual && (
         <div className="ad-row ad-manual">
-          <input placeholder="Latitude" inputMode="decimal" value={lat} onChange={(e) => setLat(e.target.value)} aria-label="Latitude" />
-          <input placeholder="Longitude" inputMode="decimal" value={lon} onChange={(e) => setLon(e.target.value)} aria-label="Longitude" />
-          <input placeholder="Label (e.g. Asheville, NC)" value={label} onChange={(e) => setLabel(e.target.value)} aria-label="Label" />
-          <button
-            type="button"
-            disabled={!lat || !lon}
-            onClick={() => onChange({ latitude: Number(lat), longitude: Number(lon), ...(label.trim() ? { label: label.trim() } : {}) })}
-          >
+          {/* Inside the settings form (forms can't nest): Enter here uses these coordinates
+              instead of saving the settings, on a real keyboard and the kit's alike. Plain text,
+              not inputMode="decimal": decimal pads (iPhone's, the kit's) have no minus sign, and
+              every longitude in the Americas is negative. */}
+          <input placeholder="Latitude" maxLength={12} autoCapitalize="none" value={lat} onChange={(e) => setLat(e.target.value)} onKeyDown={onManualKey} aria-label="Latitude" />
+          <input placeholder="Longitude" maxLength={12} autoCapitalize="none" value={lon} onChange={(e) => setLon(e.target.value)} onKeyDown={onManualKey} aria-label="Longitude" />
+          <input placeholder="Label (e.g. Asheville, NC)" maxLength={60} value={label} onChange={(e) => setLabel(e.target.value)} onKeyDown={onManualKey} aria-label="Label" />
+          <button type="button" disabled={!lat || !lon} onClick={applyManual}>
             Use
           </button>
         </div>
@@ -129,7 +141,6 @@ export function SettingsPanel({ state, act }: { state: AdminState; act: Act }) {
   const ov = draft.overlay;
   const setO = (patch: Partial<Settings["overlay"]>) => setDraft((d) => ({ ...d, overlay: { ...d.overlay, ...patch } }));
   const hasLocation = !!(w.location ?? state.venue?.location);
-  const everyRange = w.mode === "minutes" ? LIMITS.weatherEveryMinutes : LIMITS.weatherEverySlides;
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
@@ -156,12 +167,12 @@ export function SettingsPanel({ state, act }: { state: AdminState; act: Act }) {
         <label>
           Seconds per slide
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            maxLength={3}
             className="ad-num"
-            min={LIMITS.durationSec[0]}
-            max={LIMITS.durationSec[1]}
-            value={draft.defaultDurationSec}
-            onChange={(e) => setDraft({ ...draft, defaultDurationSec: Number(e.target.value) })}
+            value={draft.defaultDurationSec || ""}
+            onChange={(e) => setDraft({ ...draft, defaultDurationSec: digits(e.target.value) })}
           />
         </label>
         <label>
@@ -178,7 +189,7 @@ export function SettingsPanel({ state, act }: { state: AdminState; act: Act }) {
 
       <label>
         Time zone (for schedules and weather times)
-        <input list="menu-zones" value={draft.timezone} placeholder={state.effective.timezone} onChange={(e) => setDraft({ ...draft, timezone: e.target.value.trim() })} />
+        <input list="menu-zones" maxLength={64} spellCheck={false} value={draft.timezone} placeholder={state.effective.timezone} onChange={(e) => setDraft({ ...draft, timezone: e.target.value.trim() })} />
         <datalist id="menu-zones">
           {zones.map((z) => (
             <option key={z} value={z} />
@@ -265,12 +276,12 @@ export function SettingsPanel({ state, act }: { state: AdminState; act: Act }) {
             <label>
               Every
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                maxLength={3}
                 className="ad-num"
-                min={everyRange[0]}
-                max={everyRange[1]}
-                value={w.every}
-                onChange={(e) => setW({ every: Number(e.target.value) })}
+                value={w.every || ""}
+                onChange={(e) => setW({ every: digits(e.target.value) })}
               />
             </label>
             <label>
@@ -283,12 +294,12 @@ export function SettingsPanel({ state, act }: { state: AdminState; act: Act }) {
             <label>
               for (seconds)
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                maxLength={3}
                 className="ad-num"
-                min={LIMITS.weatherDurationSec[0]}
-                max={LIMITS.weatherDurationSec[1]}
-                value={w.durationSec}
-                onChange={(e) => setW({ durationSec: Number(e.target.value) })}
+                value={w.durationSec || ""}
+                onChange={(e) => setW({ durationSec: digits(e.target.value) })}
               />
             </label>
           </div>

@@ -1,6 +1,6 @@
 # Bar Games integration: Menu (app)
 
-**Level 1, `kind: "app"`, SDK 0.14.0, game kit 0.8.0.** An app (formerly "display module") has no rooms, players, events or
+**Level 1, `kind: "app"`, SDK 0.16.0, game kit 0.10.6.** An app (formerly "display module") has no rooms, players, events or
 commands. What it takes from the box is the venue's name, theme, location, time zone,
 units, games-list address and announcement.
 
@@ -13,7 +13,7 @@ expected "not pinned by digest" warning).
 
 ## `npx bargames check` (SDK 0.10.0 mock box with `--base /menu`, server on a spare port)
 ```
-menu@0.6.3 · level 1 · http://127.0.0.1:3116
+menu@0.6.4 · level 1 · http://127.0.0.1:3116
 ✓ health /health → 200
 ✓ /__bargames/venue.json returns the box's branding ("Menu (mock)")
 ✓ /__bargames/theme.css served
@@ -69,6 +69,27 @@ Checked by hand through the mock gateway (`--announce`). The mock lists the menu
 - Checked on `mock-box --base /menu`, with `show`, `position` and `adminUrl` patched into
   `venue.json`, since the mock can't set them. Every combination of
   everywhere/tvs/phones × top/bottom behaves as above. Standalone shows no link and no strip.
+
+## On-screen keyboard (kit 0.10.6, the box's touch screens)
+- `<OnScreenKeyboard />` is mounted once in `client/src/main.tsx`; only the admin has fields.
+- Every field the admin types in has `maxLength`, and Enter does the obvious thing:
+  - Sign-in: a form.
+  - Slide name and seconds: small forms; Enter saves.
+  - Settings: one form; Enter saves.
+  - Place search: Enter searches (its `keydown` handler cancels the form submit).
+  - Coordinates: Enter applies them.
+- Numbers are `type="text" inputMode="numeric"`; the server checks the ranges.
+- Latitude and longitude are plain text (`autoCapitalize="none"`): decimal pads have no minus
+  sign.
+- Schedule times are hour and minute dropdowns, not `<input type="time">`, whose picker touch
+  can't reach on the box. Dropdowns open as the kit's big-button list there.
+- No kiosk use (`useSharedScreen` not needed): the admin is for staff.
+- Tested with `?bg_keyboard=1` at 1920x1080 (standalone) and 3840x2160 (mock box, `--base /menu`):
+  - signed in, then typed in every field with the kit's keys;
+  - Enter behaves as above;
+  - dropdowns open the big-button list;
+  - a bottom announcement sits above the keyboard.
+- Without the flag, and with `?bg_keyboard=0`, at 390 px: no keyboard and no sideways scroll.
 
 ## Server (`server/src/bargames.ts`, `server/src/app.ts`)
 - `createBarGames({ gameId: "menu" })`. The middleware is mounted before `/api`, the
@@ -143,7 +164,7 @@ They also run it against a fake box core. The venue's location, zone and units b
 defaults, and the admin's own choices override them.
 
 ## Image
-- `ghcr.io/thezigpc/menu:<version>` (0.6.3 is on SDK 0.14.0, kit 0.8.0), published by `.github/workflows/publish-image.yml`
+- `ghcr.io/thezigpc/menu:<version>` (0.6.4 is on SDK 0.16.0, kit 0.10.6), published by `.github/workflows/publish-image.yml`
   (copied unchanged from the snippet).
 - Repo: https://github.com/thezigpc/VenueboxMenu (public). The package is public too; an
   anonymous pull of 0.1.0 returned 200. The workflow's build on GitHub is the
